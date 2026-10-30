@@ -1,42 +1,59 @@
 package com.example.proyecto_cloro.ui.theme
 
 import android.os.Build
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = RojoClaro,
+    onPrimary = Negro,
+    secondary = Blanco,
+    onSecondary = Negro,
+    tertiary = RojoClaro,
+    background = FondoOscuro,
+    onBackground = Blanco,
+    surface = SuperficieOscura,
+    onSurface = Blanco,
+    surfaceVariant = Color(0xFF29292D),
+    onSurfaceVariant = TextoSecundarioOscuro,
+    outline = Color(0xFF414146)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = Rojo,
+    onPrimary = Blanco,
+    secondary = Negro,
+    onSecondary = Blanco,
+    tertiary = RojoOscuro,
+    background = FondoClaro,
+    onBackground = Negro,
+    surface = Blanco,
+    onSurface = Negro,
+    surfaceVariant = Color(0xFFF0EFF0),
+    onSurfaceVariant = TextoSecundarioClaro,
+    outline = Color(0xFFE3E1E3)
+)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val AppShapes = Shapes(
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(24.dp)
 )
 
 @Composable
 fun Proyecto_cloroTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -52,6 +69,7 @@ fun Proyecto_cloroTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = AppShapes,
         content = content
     )
 }
