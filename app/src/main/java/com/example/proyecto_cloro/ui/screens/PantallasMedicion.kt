@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
+import androidx.compose.material3.FilterChip
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
@@ -11,13 +12,16 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.proyecto_cloro.domain.estado.obtenerEstado
 import com.example.proyecto_cloro.domain.model.Medicion
+import com.example.proyecto_cloro.domain.model.RolUsuario
 import com.example.proyecto_cloro.ui.components.Indicador
 import com.example.proyecto_cloro.ui.components.FormularioMedicion
 import com.example.proyecto_cloro.ui.components.TarjetaMedicion
@@ -153,56 +157,64 @@ fun PantallaMediciones(
 }
 
 @Composable
-fun PantallaHistorial(mediciones: List<Medicion>) {
-    ContenedorPantalla("Historial") {
+fun PantallaHistorial(mediciones: List<Medicion>, rol: RolUsuario) {
+    var mostrarSoloAlertas by remember(rol) {
+        mutableStateOf(rol.puedeRevisarAlertas)
+    }
+    val alertas = remember(mediciones, rol) {
+        if (rol.puedeRevisarAlertas) {
+            mediciones.filter { obtenerEstado(it.cloro) != "NORMAL" }
+        } else {
+            emptyList()
+        }
+    }
+    val medicionesVisibles = remember(mediciones, alertas, mostrarSoloAlertas) {
+        if (mostrarSoloAlertas) alertas else mediciones
+    }
+
+    ContenedorPantalla(
+        if (rol == RolUsuario.SUPERVISOR) "Alertas e historial" else "Historial"
+    ) {
         Text(
-            "Registro de mediciones disponibles",
+            "Consulta todas las mediciones o solo los puntos que requieren revisión.",
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        if (rol.puedeRevisarAlertas) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = !mostrarSoloAlertas,
+                    onClick = { mostrarSoloAlertas = false },
+                    label = { Text("Todas (${mediciones.size})") }
+                )
+                FilterChip(
+                    selected = mostrarSoloAlertas,
+                    onClick = { mostrarSoloAlertas = true },
+                    label = { Text("Alertas (${alertas.size})") }
+                )
+            }
+        }
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(mediciones, key = { it.id }) {
-                TarjetaMedicion(it)
-            }
-        }
-    }
-}
-
-@Composable
-fun PantallaAlertas(mediciones: List<Medicion>) {
-    val alertas = remember(mediciones) {
-        mediciones.filter { obtenerEstado(it.cloro) != "NORMAL" }
-    }
-
-    ContenedorPantalla("Alertas") {
-        Text(
-            "Puntos que requieren revisión",
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        if (alertas.isEmpty()) {
-            Text(
-                "No hay alertas activas.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 12.dp)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(alertas, key = { it.id }) {
+            if (medicionesVisibles.isEmpty()) {
+                item {
+                    Text(
+                        if (mostrarSoloAlertas) {
+                            "No hay alertas activas."
+                        } else {
+                            "Aún no hay mediciones registradas."
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                }
+            } else {
+                items(medicionesVisibles, key = { it.id }) {
                     TarjetaMedicion(it)
                 }
             }
         }
-        Text(
-            "Las alertas son ficticias y requieren validación.",
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }

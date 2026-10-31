@@ -8,7 +8,9 @@ import com.example.proyecto_cloro.data.local.entity.MedicionEntity
 import com.example.proyecto_cloro.domain.estado.obtenerEstado
 import com.example.proyecto_cloro.domain.model.Medicion
 import com.example.proyecto_cloro.notifications.NotificacionHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,7 +38,7 @@ class MedicionViewModel(application: Application) : AndroidViewModel(application
                 fecha = registro.fecha
             )
         }
-    }.stateIn(
+    }.flowOn(Dispatchers.Default).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()

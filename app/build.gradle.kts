@@ -36,7 +36,7 @@ android {
 
 dependencies {
     // Navegación y Compose
-    implementation("androidx.navigation:navigation-compose:2.10.2")
+    implementation(libs.androidx.navigation.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -47,8 +47,8 @@ dependencies {
     // Core y Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0") // Esencial para viewModel() en Compose
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     // Base de datos local (Room con KSP)
     implementation(libs.androidx.room.runtime)

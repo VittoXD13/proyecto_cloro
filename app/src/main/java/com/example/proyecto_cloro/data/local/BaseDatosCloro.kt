@@ -27,7 +27,7 @@ abstract class BaseDatosCloro : RoomDatabase() {
                     BaseDatosCloro::class.java,
                     "base_datos_cloro"
                 )
-                    .fallbackToDestructiveMigration() // Recrea la BD si cambia la versión
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build().also {
                         INSTANCIA = it
                     }

@@ -1,5 +1,8 @@
 package com.example.proyecto_cloro.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class Medicion(
     val id: Int = 0,
     val granja: String,

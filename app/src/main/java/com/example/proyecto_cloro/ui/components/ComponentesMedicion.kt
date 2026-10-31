@@ -63,15 +63,20 @@ fun Indicador(
 @Composable
 fun TarjetaMedicion(medicion: Medicion) {
     val estado = obtenerEstado(medicion.cloro)
+    val textoCloro = remember(medicion.cloro) {
+        String.format(Locale.US, "Cloro: %.2f ppm", medicion.cloro)
+    }
     val colorEstado = when (estado) {
         "NORMAL" -> Normal
         "ADVERTENCIA" -> Advertencia
         else -> Critico
     }
-    val complementarios = buildList {
-        medicion.ph?.let { add("pH: $it") }
-        medicion.temperatura?.let { add("Temp: $it °C") }
-        medicion.turbidez?.let { add("Turb: $it NTU") }
+    val complementarios = remember(medicion.ph, medicion.temperatura, medicion.turbidez) {
+        buildList {
+            medicion.ph?.let { add("pH: $it") }
+            medicion.temperatura?.let { add("Temp: $it °C") }
+            medicion.turbidez?.let { add("Turb: $it NTU") }
+        }
     }
 
     Card(
@@ -103,7 +108,7 @@ fun TarjetaMedicion(medicion: Medicion) {
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                String.format(Locale.US, "Cloro: %.2f ppm", medicion.cloro),
+                textoCloro,
                 style = MaterialTheme.typography.headlineSmall
             )
             if (complementarios.isNotEmpty()) {
