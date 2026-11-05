@@ -26,6 +26,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.proyecto_cloro.domain.model.RolUsuario
 
+private val rolesDisponibles = listOf(
+    RolUsuario.OPERARIO,
+    RolUsuario.SUPERVISOR,
+    RolUsuario.JEFATURA
+)
+
 @Composable
 fun PantallaInicioSesion(onIniciarSesion: (String, RolUsuario) -> Unit) {
     var correo by remember { mutableStateOf("") }
@@ -79,7 +85,7 @@ fun PantallaInicioSesion(onIniciarSesion: (String, RolUsuario) -> Unit) {
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 20.dp, bottom = 4.dp)
         )
-        RolUsuario.entries.forEach { rol ->
+        rolesDisponibles.forEach { rol ->
             androidx.compose.foundation.layout.Row(
                 modifier = Modifier
                     .fillMaxWidth()
