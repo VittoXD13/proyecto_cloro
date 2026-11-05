@@ -9,6 +9,5 @@ enum class RolUsuario(
 ) {
     OPERARIO("Operario", "mediciones", true, false, false),
     SUPERVISOR("Supervisor", "historial", false, true, false),
-    JEFATURA("Jefatura", "inicio", false, false, true),
-    XDD("XDD", "inicio", true, true, true)
+    JEFATURA("Jefatura", "inicio", false, false, true)
 }

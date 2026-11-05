@@ -1,6 +1,5 @@
 package com.example.proyecto_cloro.ui.navigation
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,9 +15,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,7 +23,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.proyecto_cloro.R
 import com.example.proyecto_cloro.domain.model.RolUsuario
 import com.example.proyecto_cloro.ui.screens.PantallaHistorial
 import com.example.proyecto_cloro.ui.screens.PantallaInicio
@@ -73,41 +68,18 @@ fun AplicacionCloro() {
                 Seccion("historial", "Historial", "◷"),
                 Seccion("perfil", "Perfil", "◉")
             )
-            RolUsuario.XDD -> listOf(
-                Seccion("inicio", "Inicio", "⌂"),
-                Seccion("mediciones", "Mediciones", "≡"),
-                Seccion("historial", "Historial", "◷"),
-                Seccion("perfil", "Perfil", "◉")
-            )
         }
     }
-    val mostrarFondoXdd = rolSesion == RolUsuario.XDD && rutaActual != "login"
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (mostrarFondoXdd) {
-            Image(
-                painter = painterResource(R.drawable.xdd_background),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
         Scaffold(
-            containerColor = if (mostrarFondoXdd) {
-                Color.Transparent
-            } else {
-                MaterialTheme.colorScheme.background
-            },
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
                 if (rutaActual != null && rutaActual != "login") {
                     NavigationBar(
-                        containerColor = if (mostrarFondoXdd) {
-                            Color.Transparent
-                        } else {
-                            MaterialTheme.colorScheme.surface
-                        },
+                        containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        tonalElevation = if (mostrarFondoXdd) 0.dp else 6.dp
+                        tonalElevation = 6.dp
                     ) {
                         secciones.forEach { seccion ->
                             NavigationBarItem(

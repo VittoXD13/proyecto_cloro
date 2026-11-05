@@ -22,10 +22,5 @@ class RolUsuarioTest {
         assertFalse(RolUsuario.JEFATURA.puedeRegistrarMediciones)
         assertFalse(RolUsuario.JEFATURA.puedeRevisarAlertas)
         assertTrue(RolUsuario.JEFATURA.puedeConsultarIndicadores)
-
-        assertEquals("inicio", RolUsuario.XDD.rutaInicial)
-        assertTrue(RolUsuario.XDD.puedeRegistrarMediciones)
-        assertTrue(RolUsuario.XDD.puedeRevisarAlertas)
-        assertTrue(RolUsuario.XDD.puedeConsultarIndicadores)
     }
 }
