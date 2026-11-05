@@ -6,26 +6,25 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.edit
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,48 +35,59 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.proyecto_cloro.domain.model.RolUsuario
-import java.io.File
 import java.io.IOException
-import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private const val PREFERENCIAS_PERFIL = "perfil"
+private const val CLAVE_FOTO_PERFIL = "foto_uri"
 
 @Composable
 fun PantallaPerfil(correo: String, rol: RolUsuario, onCerrarSesion: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var fotoActualizada by remember(correo) { mutableIntStateOf(0) }
-    var guardandoFoto by remember { mutableStateOf(false) }
-    var errorFoto by remember { mutableStateOf<String?>(null) }
-    val fotoPerfil by produceState<Bitmap?>(
-        initialValue = null,
-        key1 = correo,
-        key2 = fotoActualizada
-    ) {
-        value = withContext(Dispatchers.IO) {
-            cargarFotoPerfil(context, correo, (120 * context.resources.displayMetrics.density).toInt())
+    val preferencias = remember {
+        context.getSharedPreferences(PREFERENCIAS_PERFIL, Context.MODE_PRIVATE)
+    }
+    var fotoUri by remember(correo) {
+        mutableStateOf(preferencias.getString(CLAVE_FOTO_PERFIL, null)?.let(Uri::parse))
+    }
+    var foto by remember(correo) { mutableStateOf<Bitmap?>(null) }
+    var mensajeError by remember { mutableStateOf<String?>(null) }
+
+    val selectorDeFoto = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                preferencias.edit {
+                    putString(CLAVE_FOTO_PERFIL, uri.toString())
+                }
+                fotoUri = uri
+                mensajeError = null
+            } catch (_: SecurityException) {
+                mensajeError = "No se pudo guardar el acceso a la foto. Intenta elegir otra."
+            }
         }
     }
-    val selectorDeFoto = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
+
+    LaunchedEffect(fotoUri) {
+        val uri = fotoUri
+        foto = null
+        mensajeError = null
         if (uri != null) {
-            scope.launch {
-                guardandoFoto = true
-                errorFoto = null
-                try {
-                    withContext(Dispatchers.IO) {
-                        guardarFotoPerfil(context, correo, uri)
-                    }
-                    fotoActualizada++
-                } catch (_: IOException) {
-                    errorFoto = "No se pudo guardar la foto. Inténtalo de nuevo."
-                } catch (_: SecurityException) {
-                    errorFoto = "No se pudo acceder a la imagen seleccionada."
-                } finally {
-                    guardandoFoto = false
+            try {
+                foto = cargarFoto(context, uri)
+                if (foto == null) {
+                    mensajeError = "No se pudo cargar la foto seleccionada."
                 }
+            } catch (_: IOException) {
+                mensajeError = "No se pudo abrir la foto seleccionada."
+            } catch (_: SecurityException) {
+                mensajeError = "La app ya no tiene acceso a esta foto. Selecciona otra."
             }
         }
     }
@@ -88,7 +98,9 @@ fun PantallaPerfil(correo: String, rol: RolUsuario, onCerrarSesion: () -> Unit) 
             shape = MaterialTheme.shapes.medium
         ) {
             Column(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -98,9 +110,10 @@ fun PantallaPerfil(correo: String, rol: RolUsuario, onCerrarSesion: () -> Unit) 
                         .clip(CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (fotoPerfil != null) {
+                    val imagen = foto
+                    if (imagen != null) {
                         Image(
-                            bitmap = fotoPerfil!!.asImageBitmap(),
+                            bitmap = imagen.asImageBitmap(),
                             contentDescription = "Foto de perfil",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.size(120.dp)
@@ -112,25 +125,25 @@ fun PantallaPerfil(correo: String, rol: RolUsuario, onCerrarSesion: () -> Unit) 
                         )
                     }
                 }
-                Button(
-                    onClick = { selectorDeFoto.launch("image/*") },
-                    enabled = !guardandoFoto
-                ) {
-                    if (guardandoFoto) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(if (fotoPerfil == null) "Elegir foto" else "Cambiar foto")
+                Button(onClick = { selectorDeFoto.launch(arrayOf("image/*")) }) {
+                    Text(if (fotoUri == null) "Elegir foto" else "Cambiar foto")
+                }
+                if (fotoUri != null) {
+                    OutlinedButton(
+                        onClick = {
+                            preferencias.edit {
+                                remove(CLAVE_FOTO_PERFIL)
+                            }
+                            fotoUri = null
+                            foto = null
+                            mensajeError = null
+                        }
+                    ) {
+                        Text("Quitar foto")
                     }
                 }
-                if (errorFoto != null) {
-                    Text(
-                        errorFoto!!,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                mensajeError?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error)
                 }
                 Text(
                     "Cuenta de prueba",
@@ -161,52 +174,31 @@ fun PantallaPerfil(correo: String, rol: RolUsuario, onCerrarSesion: () -> Unit) 
     }
 }
 
-private fun guardarFotoPerfil(context: Context, correo: String, uri: Uri) {
-    val archivo = archivoFotoPerfil(context, correo)
-    val temporal = File(archivo.parentFile, "${archivo.name}.tmp")
-    try {
-        val entrada = context.contentResolver.openInputStream(uri)
-            ?: throw IOException("No se pudo abrir la imagen seleccionada")
-        entrada.use { input ->
-            temporal.outputStream().use { output -> input.copyTo(output) }
+private suspend fun cargarFoto(context: Context, uri: Uri): Bitmap? =
+    withContext(Dispatchers.IO) {
+        val opcionesDeTamanio = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        val flujoDeLimites = context.contentResolver.openInputStream(uri)
+            ?: return@withContext null
+        flujoDeLimites.use {
+            BitmapFactory.decodeStream(it, null, opcionesDeTamanio)
+        }
+        if (opcionesDeTamanio.outWidth <= 0 || opcionesDeTamanio.outHeight <= 0) {
+            return@withContext null
         }
 
-        val opciones = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(temporal.absolutePath, opciones)
-        if (opciones.outWidth <= 0 || opciones.outHeight <= 0) {
-            throw IOException("El archivo seleccionado no es una imagen válida")
+        val tamanioObjetivo = (144 * context.resources.displayMetrics.density).toInt()
+        var factorMuestreo = 1
+        while (
+            opcionesDeTamanio.outWidth / factorMuestreo > tamanioObjetivo ||
+            opcionesDeTamanio.outHeight / factorMuestreo > tamanioObjetivo
+        ) {
+            factorMuestreo *= 2
         }
-        if (!temporal.renameTo(archivo)) {
-            throw IOException("No se pudo guardar la imagen en el dispositivo")
+
+        val opcionesDeDecodificacion = BitmapFactory.Options().apply {
+            inSampleSize = factorMuestreo
         }
-    } finally {
-        if (temporal.exists()) temporal.delete()
+        context.contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, opcionesDeDecodificacion)
+        }
     }
-}
-
-private fun cargarFotoPerfil(context: Context, correo: String, tamañoObjetivo: Int): Bitmap? {
-    val archivo = archivoFotoPerfil(context, correo)
-    if (!archivo.exists()) return null
-
-    val opciones = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(archivo.absolutePath, opciones)
-    if (opciones.outWidth <= 0 || opciones.outHeight <= 0) return null
-
-    opciones.inSampleSize = 1
-    while (
-        opciones.outWidth / opciones.inSampleSize > tamañoObjetivo * 2 ||
-        opciones.outHeight / opciones.inSampleSize > tamañoObjetivo * 2
-    ) {
-        opciones.inSampleSize *= 2
-    }
-    opciones.inJustDecodeBounds = false
-    return BitmapFactory.decodeFile(archivo.absolutePath, opciones)
-}
-
-private fun archivoFotoPerfil(context: Context, correo: String): File {
-    val correoNormalizado = correo.trim().lowercase()
-    val hash = MessageDigest.getInstance("SHA-256")
-        .digest(correoNormalizado.toByteArray())
-        .joinToString("") { "%02x".format(it.toInt() and 0xff) }
-    return File(context.filesDir, "foto_perfil_$hash")
-}
