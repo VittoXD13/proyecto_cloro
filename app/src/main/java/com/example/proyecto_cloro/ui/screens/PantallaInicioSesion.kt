@@ -24,14 +24,17 @@ import androidx.compose.ui.unit.dp
 import com.example.proyecto_cloro.data.auth.AutenticacionDemo
 import com.example.proyecto_cloro.data.auth.ResultadoInicioSesion
 import com.example.proyecto_cloro.domain.model.SesionDemo
+import com.example.proyecto_cloro.domain.validation.validarInicioSesion
 
 @Composable
 fun PantallaInicioSesion(onIniciarSesion: (SesionDemo) -> Unit) {
     var correo by remember { mutableStateOf("") }
     var clave by remember { mutableStateOf("") }
-    var errorCorreo by remember { mutableStateOf<String?>(null) }
-    var errorClave by remember { mutableStateOf<String?>(null) }
     var credencialesInvalidas by remember { mutableStateOf(false) }
+    var mostrarErrores by remember { mutableStateOf(false) }
+    val validacion = validarInicioSesion(correo, clave)
+    val errorCorreoVisible = validacion.errorCorreo.takeIf { mostrarErrores }
+    val errorClaveVisible = validacion.errorClave.takeIf { mostrarErrores }
 
     Column(
         modifier = Modifier
@@ -50,17 +53,16 @@ fun PantallaInicioSesion(onIniciarSesion: (SesionDemo) -> Unit) {
             value = correo,
             onValueChange = {
                 correo = it
-                errorCorreo = null
                 credencialesInvalidas = false
             },
             label = { Text("Correo electrónico") },
             singleLine = true,
-            isError = errorCorreo != null || credencialesInvalidas,
+            isError = errorCorreoVisible != null || credencialesInvalidas,
             supportingText = {
-                errorCorreo?.let { Text(it) }
+                errorCorreoVisible?.let { Text(it) }
             },
             trailingIcon = {
-                if (errorCorreo != null || credencialesInvalidas) {
+                if (errorCorreoVisible != null || credencialesInvalidas) {
                     Text("!", color = MaterialTheme.colorScheme.error)
                 }
             },
@@ -71,17 +73,16 @@ fun PantallaInicioSesion(onIniciarSesion: (SesionDemo) -> Unit) {
             value = clave,
             onValueChange = {
                 clave = it
-                errorClave = null
                 credencialesInvalidas = false
             },
             label = { Text("Contraseña") },
             singleLine = true,
-            isError = errorClave != null || credencialesInvalidas,
+            isError = errorClaveVisible != null || credencialesInvalidas,
             supportingText = {
-                errorClave?.let { Text(it) }
+                errorClaveVisible?.let { Text(it) }
             },
             trailingIcon = {
-                if (errorClave != null || credencialesInvalidas) {
+                if (errorClaveVisible != null || credencialesInvalidas) {
                     Text("!", color = MaterialTheme.colorScheme.error)
                 }
             },
@@ -107,15 +108,9 @@ fun PantallaInicioSesion(onIniciarSesion: (SesionDemo) -> Unit) {
         }
         Button(
             onClick = {
-                errorCorreo = when {
-                    correo.isBlank() -> "Ingresa tu correo."
-                    !correo.trim().matches(Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) ->
-                        "Ingresa un correo válido."
-                    else -> null
-                }
-                errorClave = if (clave.isBlank()) "Ingresa tu contraseña." else null
+                mostrarErrores = true
                 credencialesInvalidas = false
-                if (errorCorreo == null && errorClave == null) {
+                if (validacion.esValido) {
                     when (val resultado = AutenticacionDemo.iniciarSesion(correo, clave)) {
                         is ResultadoInicioSesion.Exitoso -> onIniciarSesion(resultado.sesion)
                         ResultadoInicioSesion.CredencialesInvalidas ->

@@ -176,7 +176,14 @@ private fun DialogoAccionCorrectiva(
     var fotoUri by remember { mutableStateOf<Uri?>(null) }
     var uriPendiente by remember { mutableStateOf<Uri?>(null) }
     var archivoPendiente by remember { mutableStateOf<File?>(null) }
-    var error by remember { mutableStateOf("") }
+    var errorCamara by remember { mutableStateOf("") }
+    var mostrarErrorDescripcion by remember { mutableStateOf(false) }
+    val descripcionValida = descripcion.isNotBlank()
+    val errorDescripcion = if (mostrarErrorDescripcion && !descripcionValida) {
+        "Describe la acción realizada."
+    } else {
+        null
+    }
     val camara = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { capturada ->
@@ -185,7 +192,7 @@ private fun DialogoAccionCorrectiva(
         } else {
             val archivo = archivoPendiente
             if (archivo?.exists() == true && !archivo.delete()) {
-                error = "No se pudo eliminar la foto cancelada."
+                errorCamara = "No se pudo eliminar la foto cancelada."
             }
         }
         uriPendiente = null
@@ -203,14 +210,19 @@ private fun DialogoAccionCorrectiva(
                     value = descripcion,
                     onValueChange = {
                         descripcion = it
-                        error = ""
+                        errorCamara = ""
                     },
                     label = { Text("Acción realizada") },
-                    isError = error.isNotBlank(),
-                    supportingText = if (error.isNotBlank()) {
-                        { Text(error) }
+                    isError = errorDescripcion != null || errorCamara.isNotBlank(),
+                    supportingText = if (errorDescripcion != null || errorCamara.isNotBlank()) {
+                        { Text(errorDescripcion ?: errorCamara) }
                     } else {
                         null
+                    },
+                    trailingIcon = {
+                        if (errorDescripcion != null || errorCamara.isNotBlank()) {
+                            Text("!", color = MaterialTheme.colorScheme.error)
+                        }
                     },
                     minLines = 2,
                     modifier = Modifier.fillMaxWidth()
@@ -220,7 +232,7 @@ private fun DialogoAccionCorrectiva(
                         try {
                             val directorio = File(context.filesDir, "fotos_accion")
                             if (!directorio.exists() && !directorio.mkdirs()) {
-                                error = "No se pudo preparar el almacenamiento de la foto."
+                                errorCamara = "No se pudo preparar el almacenamiento de la foto."
                             } else {
                                 val archivo = File.createTempFile(
                                     "accion_${medicion.id}_",
@@ -237,13 +249,13 @@ private fun DialogoAccionCorrectiva(
                                 camara.launch(uri)
                             }
                         } catch (exception: IOException) {
-                            error = "No se pudo crear el archivo para la foto."
+                            errorCamara = "No se pudo crear el archivo para la foto."
                         } catch (exception: IllegalArgumentException) {
-                            error = "No se pudo abrir la cámara."
+                            errorCamara = "No se pudo abrir la cámara."
                         } catch (exception: ActivityNotFoundException) {
-                            error = "No hay una aplicación de cámara disponible."
+                            errorCamara = "No hay una aplicación de cámara disponible."
                         } catch (exception: SecurityException) {
-                            error = "No se concedió acceso a la cámara."
+                            errorCamara = "No se concedió acceso a la cámara."
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -258,9 +270,8 @@ private fun DialogoAccionCorrectiva(
         confirmButton = {
             Button(
                 onClick = {
-                    if (descripcion.isBlank()) {
-                        error = "Describe la acción realizada."
-                    } else {
+                    mostrarErrorDescripcion = true
+                    if (descripcionValida) {
                         val fecha = SimpleDateFormat(
                             "dd/MM/yyyy HH:mm",
                             Locale.getDefault()

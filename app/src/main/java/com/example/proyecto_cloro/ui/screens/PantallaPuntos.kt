@@ -39,11 +39,18 @@ fun PantallaPuntos(
     var nombre by remember { mutableStateOf("") }
     var mostrarErrores by remember { mutableStateOf(false) }
     var mensaje by remember { mutableStateOf("") }
-    val errores = mostrarErrores && (
-        granja.isBlank() || galpon.isBlank() || codigo.isBlank() ||
-            ubicacion.isBlank() || tipo.isBlank() || nombre.isBlank() ||
-            granja.trim() !in granjasPermitidas
-        )
+    val errores = mapOf(
+        "granja" to when {
+            granja.isBlank() -> "Ingresa la granja."
+            granja.trim() !in granjasPermitidas -> "Selecciona una granja asignada."
+            else -> null
+        },
+        "galpon" to if (galpon.isBlank()) "Ingresa el galpón." else null,
+        "codigo" to if (codigo.isBlank()) "Ingresa el código." else null,
+        "ubicacion" to if (ubicacion.isBlank()) "Ingresa la ubicación." else null,
+        "tipo" to if (tipo.isBlank()) "Ingresa el tipo de punto." else null,
+        "nombre" to if (nombre.isBlank()) "Ingresa el nombre." else null
+    )
     val puntosVisibles = puntos.filter { it.granja in granjasPermitidas }
 
     ContenedorPantalla("Puntos de medición") {
@@ -61,25 +68,28 @@ fun PantallaPuntos(
                         value = granja,
                         onValueChange = { granja = it },
                         label = { Text("Granja") },
+                        isError = mostrarErrores && errores["granja"] != null,
+                        supportingText = {
+                            errores["granja"]?.takeIf { mostrarErrores }?.let { Text(it) }
+                        },
+                        trailingIcon = {
+                            if (mostrarErrores && errores["granja"] != null) {
+                                Text("!", color = MaterialTheme.colorScheme.error)
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else {
                     Text("Granja: $granja", style = MaterialTheme.typography.titleMedium)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CampoCatalogo(galpon, { galpon = it }, "Galpón", Modifier.weight(1f))
-                    CampoCatalogo(codigo, { codigo = it }, "Código", Modifier.weight(1f))
+                    CampoCatalogo(galpon, { galpon = it }, "Galpón", errores["galpon"], mostrarErrores, Modifier.weight(1f))
+                    CampoCatalogo(codigo, { codigo = it }, "Código", errores["codigo"], mostrarErrores, Modifier.weight(1f))
                 }
-                CampoCatalogo(ubicacion, { ubicacion = it }, "Ubicación")
+                CampoCatalogo(ubicacion, { ubicacion = it }, "Ubicación", errores["ubicacion"], mostrarErrores)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CampoCatalogo(tipo, { tipo = it }, "Tipo de punto", Modifier.weight(1f))
-                    CampoCatalogo(nombre, { nombre = it }, "Nombre", Modifier.weight(1f))
-                }
-                if (errores) {
-                    Text(
-                        "Completa todos los campos y usa una granja asignada.",
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    CampoCatalogo(tipo, { tipo = it }, "Tipo de punto", errores["tipo"], mostrarErrores, Modifier.weight(1f))
+                    CampoCatalogo(nombre, { nombre = it }, "Nombre", errores["nombre"], mostrarErrores, Modifier.weight(1f))
                 }
                 if (mensaje.isNotBlank()) {
                     Text(
@@ -94,12 +104,7 @@ fun PantallaPuntos(
                 Button(
                     onClick = {
                         mostrarErrores = true
-                        if (
-                            granja.isNotBlank() && granja.trim() in granjasPermitidas &&
-                                galpon.isNotBlank() &&
-                            codigo.isNotBlank() && ubicacion.isNotBlank() &&
-                            tipo.isNotBlank() && nombre.isNotBlank()
-                        ) {
+                        if (errores.values.all { it == null }) {
                             alAgregar(
                                 PuntoControl(
                                     granja = granja.trim(),
@@ -162,6 +167,8 @@ private fun CampoCatalogo(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    error: String?,
+    mostrarErrores: Boolean,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
@@ -169,6 +176,15 @@ private fun CampoCatalogo(
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
+        isError = mostrarErrores && error != null,
+        supportingText = {
+            error?.takeIf { mostrarErrores }?.let { Text(it) }
+        },
+        trailingIcon = {
+            if (mostrarErrores && error != null) {
+                Text("!", color = MaterialTheme.colorScheme.error)
+            }
+        },
         modifier = modifier.fillMaxWidth()
     )
 }
