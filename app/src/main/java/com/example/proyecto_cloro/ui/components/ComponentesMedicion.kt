@@ -2,7 +2,6 @@ package com.example.proyecto_cloro.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -12,6 +11,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -187,30 +187,38 @@ fun FormularioMedicion(
         ) {
             Text("Registrar Medición del Punto", style = MaterialTheme.typography.titleLarge)
             Box {
-                OutlinedTextField(
-                    value = puntoSeleccionado?.let {
-                        "${it.codigo} · ${it.granja} / ${it.galpon} · ${it.nombre}"
-                    }.orEmpty(),
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Punto de medición") },
-                    isError = mostrarErrores && puntoSeleccionado == null,
-                    supportingText = {
+                OutlinedButton(
+                    onClick = { menuPuntosAbierto = true },
+                    enabled = puntos.isNotEmpty(),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
                         if (mostrarErrores && puntoSeleccionado == null) {
-                            Text("Registra puntos en el catálogo antes de medir.")
-                        }
-                    },
-                    trailingIcon = {
-                        if (mostrarErrores && puntoSeleccionado == null) {
-                            Text("!", color = MaterialTheme.colorScheme.error)
+                            MaterialTheme.colorScheme.error
                         } else {
-                            Text("⌄")
+                            MaterialTheme.colorScheme.outline
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { menuPuntosAbierto = true }
-                )
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            puntoSeleccionado?.let {
+                                "${it.codigo} · ${it.granja} / ${it.galpon} · ${it.nombre}"
+                            } ?: "Selecciona un punto de medición"
+                        )
+                        Text(
+                            if (mostrarErrores && puntoSeleccionado == null) "!" else "⌄",
+                            color = if (mostrarErrores && puntoSeleccionado == null) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                }
                 DropdownMenu(
                     expanded = menuPuntosAbierto,
                     onDismissRequest = { menuPuntosAbierto = false }
@@ -227,6 +235,17 @@ fun FormularioMedicion(
                         )
                     }
                 }
+            }
+            if (mostrarErrores && puntoSeleccionado == null) {
+                Text(
+                    if (puntos.isEmpty()) {
+                        "No hay puntos registrados para esta granja."
+                    } else {
+                        "Selecciona un punto de medición."
+                    },
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
             if (puntoSeleccionado != null) {
                 Text(

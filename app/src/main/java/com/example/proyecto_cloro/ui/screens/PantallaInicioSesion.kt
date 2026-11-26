@@ -66,7 +66,10 @@ fun PantallaInicioSesion(onIniciarSesion: (SesionDemo) -> Unit) {
                     Text("!", color = MaterialTheme.colorScheme.error)
                 }
             },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                autoCorrectEnabled = false
+            ),
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
