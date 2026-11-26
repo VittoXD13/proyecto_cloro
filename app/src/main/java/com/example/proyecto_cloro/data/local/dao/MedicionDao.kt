@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 interface MedicionDao {
 
     @Insert
-    suspend fun insertar(medicion: MedicionEntity)
+    suspend fun insertar(medicion: MedicionEntity): Long
 
     @Query("SELECT * FROM mediciones ORDER BY id DESC")
     fun obtenerTodas(): Flow<List<MedicionEntity>>

@@ -13,14 +13,16 @@ class RolUsuarioTest {
         assertFalse(RolUsuario.OPERARIO.puedeRevisarAlertas)
         assertFalse(RolUsuario.OPERARIO.puedeConsultarIndicadores)
 
-        assertEquals("historial", RolUsuario.SUPERVISOR.rutaInicial)
+        assertEquals("alertas", RolUsuario.SUPERVISOR.rutaInicial)
         assertFalse(RolUsuario.SUPERVISOR.puedeRegistrarMediciones)
         assertTrue(RolUsuario.SUPERVISOR.puedeRevisarAlertas)
         assertFalse(RolUsuario.SUPERVISOR.puedeConsultarIndicadores)
+        assertTrue(RolUsuario.SUPERVISOR.puedeAdministrarCatalogo)
 
         assertEquals("inicio", RolUsuario.JEFATURA.rutaInicial)
         assertFalse(RolUsuario.JEFATURA.puedeRegistrarMediciones)
         assertFalse(RolUsuario.JEFATURA.puedeRevisarAlertas)
         assertTrue(RolUsuario.JEFATURA.puedeConsultarIndicadores)
+        assertFalse(RolUsuario.JEFATURA.puedeAdministrarCatalogo)
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,25 +18,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.proyecto_cloro.domain.model.RolUsuario
-
-private val rolesDisponibles = listOf(
-    RolUsuario.OPERARIO,
-    RolUsuario.SUPERVISOR,
-    RolUsuario.JEFATURA
-)
+import com.example.proyecto_cloro.data.auth.AutenticacionDemo
+import com.example.proyecto_cloro.data.auth.ResultadoInicioSesion
+import com.example.proyecto_cloro.domain.model.SesionDemo
 
 @Composable
-fun PantallaInicioSesion(onIniciarSesion: (String, RolUsuario) -> Unit) {
+fun PantallaInicioSesion(onIniciarSesion: (SesionDemo) -> Unit) {
     var correo by remember { mutableStateOf("") }
-    var contraseña by remember { mutableStateOf("") }
-    var mostrarError by remember { mutableStateOf(false) }
-    var rolSeleccionado by remember { mutableStateOf(RolUsuario.OPERARIO) }
+    var clave by remember { mutableStateOf("") }
+    var errorCorreo by remember { mutableStateOf<String?>(null) }
+    var errorClave by remember { mutableStateOf<String?>(null) }
+    var credencialesInvalidas by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -46,34 +40,51 @@ fun PantallaInicioSesion(onIniciarSesion: (String, RolUsuario) -> Unit) {
             .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
+        Text("Iniciar sesión", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Iniciar sesión",
-            style = MaterialTheme.typography.headlineMedium
-        )
-        Text(
-            "Ingresa tus datos y elige un rol de prueba para continuar.",
+            "Acceso demostrativo con cuentas ficticias y permisos por rol.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
+            modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
         )
         OutlinedTextField(
             value = correo,
             onValueChange = {
                 correo = it
-                mostrarError = false
+                errorCorreo = null
+                credencialesInvalidas = false
             },
             label = { Text("Correo electrónico") },
             singleLine = true,
+            isError = errorCorreo != null || credencialesInvalidas,
+            supportingText = {
+                errorCorreo?.let { Text(it) }
+            },
+            trailingIcon = {
+                if (errorCorreo != null || credencialesInvalidas) {
+                    Text("!", color = MaterialTheme.colorScheme.error)
+                }
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
-            value = contraseña,
+            value = clave,
             onValueChange = {
-                contraseña = it
-                mostrarError = false
+                clave = it
+                errorClave = null
+                credencialesInvalidas = false
             },
             label = { Text("Contraseña") },
             singleLine = true,
+            isError = errorClave != null || credencialesInvalidas,
+            supportingText = {
+                errorClave?.let { Text(it) }
+            },
+            trailingIcon = {
+                if (errorClave != null || credencialesInvalidas) {
+                    Text("!", color = MaterialTheme.colorScheme.error)
+                }
+            },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier
@@ -81,42 +92,35 @@ fun PantallaInicioSesion(onIniciarSesion: (String, RolUsuario) -> Unit) {
                 .padding(top = 12.dp)
         )
         Text(
-            "Rol principal (modo de prueba)",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 20.dp, bottom = 4.dp)
+            "Cuentas de prueba: operario1@demo.cloro, supervisor1@demo.cloro o " +
+                "jefatura1@demo.cloro. Contraseña: ${AutenticacionDemo.CLAVE_DEMO}",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 16.dp)
         )
-        rolesDisponibles.forEach { rol ->
-            androidx.compose.foundation.layout.Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
-                        selected = rolSeleccionado == rol,
-                        role = Role.RadioButton,
-                        onClick = { rolSeleccionado = rol }
-                    )
-                    .padding(vertical = 2.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = rolSeleccionado == rol,
-                    onClick = { rolSeleccionado = rol }
-                )
-                Text(rol.etiqueta)
-            }
-        }
-        if (mostrarError) {
+        if (credencialesInvalidas) {
             Text(
-                "Ingresa tu correo y contraseña.",
+                "Correo o contraseña incorrectos.",
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
         Button(
             onClick = {
-                if (correo.isNotBlank() && contraseña.isNotBlank()) {
-                    onIniciarSesion(correo.trim(), rolSeleccionado)
-                } else {
-                    mostrarError = true
+                errorCorreo = when {
+                    correo.isBlank() -> "Ingresa tu correo."
+                    !correo.trim().matches(Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) ->
+                        "Ingresa un correo válido."
+                    else -> null
+                }
+                errorClave = if (clave.isBlank()) "Ingresa tu contraseña." else null
+                credencialesInvalidas = false
+                if (errorCorreo == null && errorClave == null) {
+                    when (val resultado = AutenticacionDemo.iniciarSesion(correo, clave)) {
+                        is ResultadoInicioSesion.Exitoso -> onIniciarSesion(resultado.sesion)
+                        ResultadoInicioSesion.CredencialesInvalidas ->
+                            credencialesInvalidas = true
+                    }
                 }
             },
             modifier = Modifier

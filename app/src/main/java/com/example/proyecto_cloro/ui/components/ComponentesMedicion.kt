@@ -1,10 +1,15 @@
 package com.example.proyecto_cloro.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -21,7 +26,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.proyecto_cloro.domain.estado.obtenerEstado
+import com.example.proyecto_cloro.domain.model.PuntoControl
 import com.example.proyecto_cloro.domain.model.Medicion
+import com.example.proyecto_cloro.domain.validation.CampoMedicion
+import com.example.proyecto_cloro.domain.validation.validarMedicion
 import com.example.proyecto_cloro.ui.theme.Advertencia
 import com.example.proyecto_cloro.ui.theme.Critico
 import com.example.proyecto_cloro.ui.theme.Normal
@@ -135,23 +143,34 @@ fun TarjetaMedicion(medicion: Medicion) {
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (medicion.sincronizacionPendiente) {
+                Text(
+                    "Pendiente de sincronización",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
         }
     }
 }
 
 @Composable
-fun FormularioMedicion(alGuardar: (Medicion) -> Unit) {
-    var granja by remember { mutableStateOf("Granja 1") }
-    var galpon by remember { mutableStateOf("Galpón A") }
-    var codigoPunto by remember { mutableStateOf("P-001") }
-    var ubicacion by remember { mutableStateOf("Bebedero Línea 1") }
-    var tipoPunto by remember { mutableStateOf("Bebedero") }
-    var punto by remember { mutableStateOf("Línea Final") }
+fun FormularioMedicion(
+    puntos: List<PuntoControl>,
+    alGuardar: (Medicion, () -> Unit) -> Unit
+) {
+    var codigoSeleccionado by remember(puntos) {
+        mutableStateOf(puntos.firstOrNull()?.codigo.orEmpty())
+    }
+    var menuPuntosAbierto by remember { mutableStateOf(false) }
     var nivelCloro by remember { mutableStateOf("") }
     var phText by remember { mutableStateOf("") }
     var tempText by remember { mutableStateOf("") }
     var turbidezText by remember { mutableStateOf("") }
     var mensaje by remember { mutableStateOf("") }
+    var mostrarErrores by remember { mutableStateOf(false) }
+    val validacion = validarMedicion(nivelCloro, phText, tempText, turbidezText)
+    val puntoSeleccionado = puntos.firstOrNull { it.codigo == codigoSeleccionado }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -163,121 +182,175 @@ fun FormularioMedicion(alGuardar: (Medicion) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
                 .fillMaxWidth()
+                .animateContentSize()
                 .padding(16.dp)
         ) {
             Text("Registrar Medición del Punto", style = MaterialTheme.typography.titleLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box {
                 OutlinedTextField(
-                    value = granja,
-                    onValueChange = { granja = it },
-                    label = { Text("Granja") },
-                    modifier = Modifier.weight(1f)
+                    value = puntoSeleccionado?.let {
+                        "${it.codigo} · ${it.granja} / ${it.galpon} · ${it.nombre}"
+                    }.orEmpty(),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Punto de medición") },
+                    isError = mostrarErrores && puntoSeleccionado == null,
+                    supportingText = {
+                        if (mostrarErrores && puntoSeleccionado == null) {
+                            Text("Registra puntos en el catálogo antes de medir.")
+                        }
+                    },
+                    trailingIcon = {
+                        if (mostrarErrores && puntoSeleccionado == null) {
+                            Text("!", color = MaterialTheme.colorScheme.error)
+                        } else {
+                            Text("⌄")
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { menuPuntosAbierto = true }
                 )
-                OutlinedTextField(
-                    value = galpon,
-                    onValueChange = { galpon = it },
-                    label = { Text("Galpón") },
-                    modifier = Modifier.weight(1f)
+                DropdownMenu(
+                    expanded = menuPuntosAbierto,
+                    onDismissRequest = { menuPuntosAbierto = false }
+                ) {
+                    puntos.forEach { punto ->
+                        DropdownMenuItem(
+                            text = {
+                                Text("${punto.codigo} · ${punto.granja}, ${punto.galpon} · ${punto.nombre}")
+                            },
+                            onClick = {
+                                codigoSeleccionado = punto.codigo
+                                menuPuntosAbierto = false
+                            }
+                        )
+                    }
+                }
+            }
+            if (puntoSeleccionado != null) {
+                Text(
+                    "${puntoSeleccionado.ubicacion} · ${puntoSeleccionado.tipo}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = codigoPunto,
-                    onValueChange = { codigoPunto = it },
-                    label = { Text("Cód. Punto") },
-                    modifier = Modifier.weight(1f)
-                )
-                OutlinedTextField(
-                    value = tipoPunto,
-                    onValueChange = { tipoPunto = it },
-                    label = { Text("Tipo Punto") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            OutlinedTextField(
-                value = ubicacion,
-                onValueChange = { ubicacion = it },
-                label = { Text("Ubicación exacta") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = punto,
-                onValueChange = { punto = it },
-                label = { Text("Nombre del punto") },
-                modifier = Modifier.fillMaxWidth()
-            )
             OutlinedTextField(
                 value = nivelCloro,
-                onValueChange = { nivelCloro = it },
-                label = { Text("Cloro Libre (ppm / mg/L) * Obligatorio") },
+                onValueChange = {
+                    nivelCloro = it
+                    mensaje = ""
+                },
+                label = { Text("Cloro libre (ppm) *") },
                 modifier = Modifier.fillMaxWidth(),
+                isError = mostrarErrores && CampoMedicion.CLORO in validacion.errores,
+                supportingText = {
+                    validacion.errores[CampoMedicion.CLORO]?.takeIf { mostrarErrores }?.let {
+                        Text(it)
+                    }
+                },
+                trailingIcon = {
+                    if (mostrarErrores && CampoMedicion.CLORO in validacion.errores) {
+                        Text("!", color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
             )
             Text("Parámetros adicionales (Opcional)", style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = phText,
-                    onValueChange = { phText = it },
+                    onValueChange = { phText = it; mensaje = "" },
                     label = { Text("pH") },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = mostrarErrores && CampoMedicion.PH in validacion.errores,
+                    supportingText = {
+                        validacion.errores[CampoMedicion.PH]?.takeIf { mostrarErrores }?.let {
+                            Text(it)
+                        }
+                    },
+                    trailingIcon = {
+                        if (mostrarErrores && CampoMedicion.PH in validacion.errores) {
+                            Text("!", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
                 OutlinedTextField(
                     value = tempText,
-                    onValueChange = { tempText = it },
+                    onValueChange = { tempText = it; mensaje = "" },
                     label = { Text("Temp (°C)") },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = mostrarErrores && CampoMedicion.TEMPERATURA in validacion.errores,
+                    supportingText = {
+                        validacion.errores[CampoMedicion.TEMPERATURA]?.takeIf { mostrarErrores }?.let {
+                            Text(it)
+                        }
+                    },
+                    trailingIcon = {
+                        if (mostrarErrores && CampoMedicion.TEMPERATURA in validacion.errores) {
+                            Text("!", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
                 OutlinedTextField(
                     value = turbidezText,
-                    onValueChange = { turbidezText = it },
+                    onValueChange = { turbidezText = it; mensaje = "" },
                     label = { Text("Turbidez") },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = mostrarErrores && CampoMedicion.TURBIDEZ in validacion.errores,
+                    supportingText = {
+                        validacion.errores[CampoMedicion.TURBIDEZ]?.takeIf { mostrarErrores }?.let {
+                            Text(it)
+                        }
+                    },
+                    trailingIcon = {
+                        if (mostrarErrores && CampoMedicion.TURBIDEZ in validacion.errores) {
+                            Text("!", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
             }
             Button(
                 onClick = {
-                    val cloroVal = nivelCloro.replace(',', '.').toDoubleOrNull()
-                    val phVal = phText.replace(',', '.').toDoubleOrNull()
-                    val tempVal = tempText.replace(',', '.').toDoubleOrNull()
-                    val turbidezVal = turbidezText.replace(',', '.').toDoubleOrNull()
-
-                    if (granja.isNotBlank() && punto.isNotBlank() && cloroVal != null && cloroVal >= 0) {
+                    mostrarErrores = true
+                    val cloroValido = validacion.cloro
+                    if (validacion.esValido && puntoSeleccionado != null && cloroValido != null) {
                         val fecha = SimpleDateFormat(
                             "dd/MM/yyyy HH:mm",
                             Locale.getDefault()
                         ).format(Date())
                         alGuardar(
                             Medicion(
-                                granja = granja.trim(),
-                                galpon = galpon.trim(),
-                                codigoPunto = codigoPunto.trim(),
-                                ubicacion = ubicacion.trim(),
-                                tipoPunto = tipoPunto.trim(),
-                                punto = punto.trim(),
-                                cloro = cloroVal,
-                                ph = phVal,
-                                temperatura = tempVal,
-                                turbidez = turbidezVal,
+                                granja = puntoSeleccionado.granja,
+                                galpon = puntoSeleccionado.galpon,
+                                codigoPunto = puntoSeleccionado.codigo,
+                                ubicacion = puntoSeleccionado.ubicacion,
+                                tipoPunto = puntoSeleccionado.tipo,
+                                punto = puntoSeleccionado.nombre,
+                                cloro = cloroValido,
+                                ph = validacion.ph,
+                                temperatura = validacion.temperatura,
+                                turbidez = validacion.turbidez,
                                 fecha = fecha
                             )
-                        )
-                        nivelCloro = ""
-                        phText = ""
-                        tempText = ""
-                        turbidezText = ""
-                        mensaje = "Medición registrada exitosamente."
-                    } else {
-                        mensaje = "Ingresa un valor válido de cloro libre."
+                        ) {
+                            nivelCloro = ""
+                            phText = ""
+                            tempText = ""
+                            turbidezText = ""
+                            mostrarErrores = false
+                            mensaje = "Medición registrada exitosamente."
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Guardar Medición")
             }
-            if (mensaje.isNotBlank()) {
+            AnimatedVisibility(visible = mensaje.isNotBlank()) {
                 Text(mensaje, color = MaterialTheme.colorScheme.primary)
             }
         }

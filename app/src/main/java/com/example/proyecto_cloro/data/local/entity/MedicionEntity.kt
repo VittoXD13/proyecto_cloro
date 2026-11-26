@@ -1,6 +1,7 @@
 package com.example.proyecto_cloro.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "mediciones")
@@ -18,5 +19,7 @@ data class MedicionEntity(
     val ph: Double? = null,
     val temperatura: Double? = null,
     val turbidez: Double? = null,
-    val fecha: String
+    val fecha: String,
+    @ColumnInfo(defaultValue = "1")
+    val sincronizacionPendiente: Boolean = true
 )

@@ -5,9 +5,10 @@ enum class RolUsuario(
     val rutaInicial: String,
     val puedeRegistrarMediciones: Boolean,
     val puedeRevisarAlertas: Boolean,
-    val puedeConsultarIndicadores: Boolean
+    val puedeConsultarIndicadores: Boolean,
+    val puedeAdministrarCatalogo: Boolean
 ) {
-    OPERARIO("Operario", "mediciones", true, false, false),
-    SUPERVISOR("Supervisor", "historial", false, true, false),
-    JEFATURA("Jefatura", "inicio", false, false, true)
+    OPERARIO("Operario", "mediciones", true, false, false, false),
+    SUPERVISOR("Supervisor", "alertas", false, true, false, true),
+    JEFATURA("Jefatura", "inicio", false, false, true, false)
 }

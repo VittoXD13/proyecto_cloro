@@ -15,5 +15,6 @@ data class Medicion(
     val ph: Double? = null,
     val temperatura: Double? = null,
     val turbidez: Double? = null,
-    val fecha: String
+    val fecha: String,
+    val sincronizacionPendiente: Boolean = true
 )
